@@ -202,7 +202,7 @@ defmodule NavBuddy.Component do
         phx-click={JS.push("navbuddy:item_click", value: %{id: @item.id, navigate: Map.get(@item, :navigate)})}
       >
         <.nav_icon :if={Map.get(@item, :icon)} icon={Map.get(@item, :icon)} />
-        <span class="navbuddy-nav-text">{@item.label}</span>
+        <span class="navbuddy-nav-text"><%= @item.label %></span>
       </a>
     <% else %>
       <span
@@ -212,7 +212,7 @@ defmodule NavBuddy.Component do
         aria-disabled={to_string(!!Map.get(@item, :disabled))}
       >
         <.nav_icon :if={Map.get(@item, :icon)} icon={Map.get(@item, :icon)} />
-        <span class="navbuddy-nav-text">{@item.label}</span>
+        <span class="navbuddy-nav-text"><%= @item.label %></span>
       </span>
     <% end %>
     """
@@ -245,7 +245,7 @@ defmodule NavBuddy.Component do
       data-dropdown-trigger={@config.dropdown_trigger}
     >
       <.nav_icon :if={@item.icon} icon={@item.icon} />
-      <span class="navbuddy-nav-text">{@item.label}</span>
+      <span class="navbuddy-nav-text"><%= @item.label %></span>
       <.nav_icon icon="chevron-down" class="navbuddy-dropdown-icon" />
     </button>
     """
@@ -278,7 +278,7 @@ defmodule NavBuddy.Component do
       data-dropdown-trigger={@config.dropdown_trigger}
     >
       <.nav_icon :if={@item.icon} icon={@item.icon} />
-      <span class="navbuddy-nav-text">{@item.label}</span>
+      <span class="navbuddy-nav-text"><%= @item.label %></span>
       <.nav_icon icon="chevron-down" class="navbuddy-dropdown-icon" />
     </button>
     """
@@ -369,9 +369,9 @@ defmodule NavBuddy.Component do
       <div class="navbuddy-mega-menu-container">
         <%= if is_structured_mega_menu?(@menu) do %>
           <div class="navbuddy-mega-menu-header">
-            <h3 class="navbuddy-mega-menu-title">{@menu.title}</h3>
+            <h3 class="navbuddy-mega-menu-title"><%= @menu.title %></h3>
             <p :if={Map.get(@menu, :description)} class="navbuddy-mega-menu-description">
-              {Map.get(@menu, :description)}
+              <%= Map.get(@menu, :description) %>
             </p>
           </div>
 
@@ -386,10 +386,10 @@ defmodule NavBuddy.Component do
                 id={"#{@menu_id}-section-#{section.title |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
                 class="navbuddy-mega-menu-section-title"
               >
-                {section.title}
+                <%= section.title %>
               </h4>
               <p :if={Map.get(section, :description)} class="navbuddy-mega-menu-section-description">
-                {Map.get(section, :description)}
+                <%= Map.get(section, :description) %>
               </p>
 
               <ul class="navbuddy-mega-menu-section-items">
@@ -411,7 +411,7 @@ defmodule NavBuddy.Component do
                 id={"#{@menu_id}-category-#{category_name |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
                 class="navbuddy-mega-menu-section-title"
               >
-                {category_name}
+                <%= category_name %>
               </h4>
 
               <ul class="navbuddy-mega-menu-section-items">
