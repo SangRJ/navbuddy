@@ -106,6 +106,27 @@ defmodule NavBuddy do
         }
       }
 
+  ### Permissions-based Navigation
+      %{
+        id: "admin",
+        label: "Admin Panel",
+        navigate: "/admin",
+        permissions: "admin"  # Only visible to users with "admin" permission
+      }
+
+      %{
+        id: "reports",
+        label: "Reports",
+        navigate: "/reports",
+        permissions: ["manager", "admin"]  # Visible to users with either permission
+      }
+
+      %{
+        id: "profile",
+        label: "Profile",
+        navigate: "/profile"  # No permissions = visible to everyone
+      }
+
   ## Accessibility Features
 
   NavBuddy includes comprehensive accessibility support:
@@ -142,7 +163,8 @@ defmodule NavBuddy do
           dropdown: [nav_item()] | nil,
           mega_menu: mega_menu() | nil,
           active: boolean() | nil,
-          disabled: boolean() | nil
+          disabled: boolean() | nil,
+          permissions: String.t() | [String.t()] | nil
         }
 
   @type mega_menu :: %{
@@ -265,6 +287,114 @@ defmodule NavBuddy do
   end
 
   defp validate_mega_menu_section(_), do: true
+
+  @doc """
+  Filters navigation items based on user permissions.
+
+  Removes items that the user doesn't have permission to see. Items without
+  permissions are always visible. When an item has a list of permissions,
+  the user must have ALL of them to see the item.
+
+  ## Examples
+
+      iex> items = [
+      ...>   %{id: "home", label: "Home", navigate: "/"},
+      ...>   %{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin"},
+      ...>   %{id: "user", label: "Profile", navigate: "/profile", permissions: "user"}
+      ...> ]
+      iex> NavBuddy.filter_by_permissions(items, ["user"])
+      [
+        %{id: "home", label: "Home", navigate: "/"},
+        %{id: "user", label: "Profile", navigate: "/profile", permissions: "user"}
+      ]
+  """
+  def filter_by_permissions(items, user_permissions)
+      when is_list(items) and is_list(user_permissions) do
+    Enum.filter(items, &has_permission?(&1, user_permissions))
+    |> Enum.map(&filter_item_permissions(&1, user_permissions))
+    |> Enum.filter(&item_has_content?/1)
+  end
+
+  def filter_by_permissions(items, user_permissions)
+      when is_list(items) and is_binary(user_permissions) do
+    filter_by_permissions(items, [user_permissions])
+  end
+
+  def filter_by_permissions(items, _) when is_list(items) do
+    items
+  end
+
+  defp has_permission?(%{permissions: nil}, _), do: true
+
+  defp has_permission?(%{permissions: item_perms}, user_perms) when is_binary(item_perms) do
+    item_perms in user_perms
+  end
+
+  defp has_permission?(%{permissions: item_perms}, user_perms) when is_list(item_perms) do
+    # Item requires ALL permissions in the list
+    Enum.all?(item_perms, &(&1 in user_perms))
+  end
+
+  defp has_permission?(_, _), do: true
+
+  defp filter_item_permissions(item, user_permissions) do
+    item
+    |> filter_dropdown_permissions(user_permissions)
+    |> filter_mega_menu_permissions(user_permissions)
+  end
+
+  defp filter_dropdown_permissions(%{dropdown: dropdown} = item, user_permissions)
+       when is_list(dropdown) do
+    filtered_dropdown = filter_by_permissions(dropdown, user_permissions)
+    %{item | dropdown: filtered_dropdown}
+  end
+
+  defp filter_dropdown_permissions(item, _), do: item
+
+  defp filter_mega_menu_permissions(%{mega_menu: mega_menu} = item, user_permissions)
+       when is_map(mega_menu) do
+    case mega_menu do
+      # Handle simple map structure: %{"category" => [items]}
+      %{sections: _} = structured_mega_menu ->
+        filtered_sections =
+          Enum.map(structured_mega_menu.sections, fn section ->
+            %{section | items: filter_by_permissions(section.items, user_permissions)}
+          end)
+
+        %{item | mega_menu: %{structured_mega_menu | sections: filtered_sections}}
+
+      # Handle simple map structure: %{"category" => [items]}
+      simple_mega_menu ->
+        filtered_mega_menu =
+          simple_mega_menu
+          |> Enum.map(fn {category, items} ->
+            {category, filter_by_permissions(items, user_permissions)}
+          end)
+          |> Enum.filter(fn {_category, items} -> length(items) > 0 end)
+          |> Enum.into(%{})
+
+        %{item | mega_menu: filtered_mega_menu}
+    end
+  end
+
+  defp filter_mega_menu_permissions(item, _), do: item
+
+  # Check if an item still has content after filtering
+  defp item_has_content?(%{dropdown: dropdown}) when is_list(dropdown) do
+    length(dropdown) > 0
+  end
+
+  defp item_has_content?(%{mega_menu: mega_menu}) when is_map(mega_menu) do
+    case mega_menu do
+      %{sections: sections} when is_list(sections) ->
+        Enum.any?(sections, fn section -> length(section.items) > 0 end)
+
+      simple_mega_menu ->
+        map_size(simple_mega_menu) > 0
+    end
+  end
+
+  defp item_has_content?(_), do: true
 
   @doc """
   Generates a unique menu ID for accessibility.

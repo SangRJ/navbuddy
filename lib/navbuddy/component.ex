@@ -54,6 +54,7 @@ defmodule NavBuddy.Component do
   - `items` (required) - List of navigation items
   - `config` - NavBuddy.Config struct (defaults to default config)
   - `current_path` - Current path for active state highlighting
+  - `user_permissions` - List of user permissions for filtering navigation items
   - `id` - HTML id attribute (defaults to "navbuddy-nav")
   - `class` - Additional CSS classes
   - `rest` - Additional HTML attributes
@@ -66,6 +67,7 @@ defmodule NavBuddy.Component do
         items={@navigation_items}
         config={%NavBuddy.Config{orientation: :vertical}}
         current_path={@current_path}
+        user_permissions={@current_user_permissions}
         id="main-navigation"
         class="my-custom-nav"
       />
@@ -73,6 +75,7 @@ defmodule NavBuddy.Component do
   attr(:items, :list, required: true)
   attr(:config, NavBuddy.Config, default: %NavBuddy.Config{})
   attr(:current_path, :string, default: nil)
+  attr(:user_permissions, :any, default: nil)
   attr(:id, :string, default: "navbuddy-nav")
   attr(:class, :string, default: "")
   attr(:rest, :global)
@@ -546,7 +549,14 @@ defmodule NavBuddy.Component do
   # Private helper functions
 
   defp assign_nav_data(assigns) do
-    processed_items = NavBuddy.find_active_item(assigns.items, assigns.current_path || "")
+    # Filter items by user permissions first
+    filtered_items =
+      case assigns[:user_permissions] do
+        nil -> assigns.items
+        permissions -> NavBuddy.filter_by_permissions(assigns.items, permissions)
+      end
+
+    processed_items = NavBuddy.find_active_item(filtered_items, assigns.current_path || "")
     data_attributes = Config.to_data_attributes(assigns.config)
 
     assigns

@@ -147,6 +147,100 @@ end
 }
 ```
 
+## Permissions-Based Navigation
+
+NavBuddy supports permissions-based filtering to control which navigation items are visible to users. Add a `permissions` key to any navigation item to require specific permissions.
+
+### Basic Permissions
+
+```elixir
+navigation_items = [
+  %{id: "home", label: "Home", navigate: "/"},
+  %{id: "dashboard", label: "Dashboard", navigate: "/dashboard", permissions: "user"},
+  %{id: "admin", label: "Admin Panel", navigate: "/admin", permissions: "admin"}
+]
+```
+
+### Multiple Required Permissions
+
+Use a list to require multiple permissions (user must have ALL permissions):
+
+```elixir
+navigation_items = [
+  %{
+    id: "sensitive",
+    label: "Sensitive Data",
+    navigate: "/sensitive",
+    permissions: ["admin", "data_access"]  # Requires BOTH permissions
+  }
+]
+```
+
+### Nested Structure Permissions
+
+Permissions work with dropdowns and mega-menus:
+
+```elixir
+navigation_items = [
+  %{
+    id: "reports",
+    label: "Reports",
+    dropdown: [
+      %{id: "basic_reports", label: "Basic Reports", navigate: "/reports/basic"},
+      %{id: "admin_reports", label: "Admin Reports", navigate: "/reports/admin", permissions: "admin"},
+      %{id: "analytics", label: "Analytics", navigate: "/reports/analytics", permissions: ["analyst", "premium"]}
+    ]
+  }
+]
+```
+
+### Using in LiveView
+
+Pass user permissions to the component:
+
+```elixir
+# In your LiveView mount/3 or assign
+def mount(_params, session, socket) do
+  current_user = get_current_user(session)
+  user_permissions = get_user_permissions(current_user)
+
+  socket = assign(socket, user_permissions: user_permissions)
+  {:ok, socket}
+end
+
+# In your template
+<NavBuddy.Component.nav_menu
+  items={@navigation_items}
+  user_permissions={@user_permissions}
+  config={@nav_config}
+  current_path={@current_path} />
+```
+
+### Permission Examples
+
+```elixir
+# String permission - user needs "admin" permission
+%{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin"}
+
+# List of permissions - user needs ALL listed permissions
+%{id: "sensitive", label: "Sensitive", navigate: "/sensitive", permissions: ["admin", "security"]}
+
+# No permissions - visible to everyone
+%{id: "home", label: "Home", navigate: "/"}
+
+# nil permissions - same as no permissions key
+%{id: "public", label: "Public", navigate: "/public", permissions: nil}
+```
+
+The filtering automatically:
+
+- Shows items with no `permissions` key to everyone
+- Shows items with `permissions: nil` to everyone
+- Requires exact string match for string permissions
+- Requires ALL permissions in list for list permissions
+- Recursively filters dropdown and mega-menu items
+- Removes parent items if all children are filtered out
+
 ## Configuration
 
 Create a configuration struct:

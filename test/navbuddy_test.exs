@@ -50,4 +50,163 @@ defmodule NavBuddyTest do
       assert about_item.active == true
     end
   end
+
+  describe "filter_by_permissions/2" do
+    test "returns all items when user_permissions is nil" do
+      items = [
+        %{id: "home", label: "Home", navigate: "/", permissions: "read"},
+        %{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin"}
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, nil)
+      assert length(result) == 2
+    end
+
+    test "filters items based on string permissions" do
+      items = [
+        %{id: "home", label: "Home", navigate: "/", permissions: "read"},
+        %{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin"},
+        %{id: "public", label: "Public", navigate: "/public"}
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, "read")
+      # home and public (no permissions required)
+      assert length(result) == 2
+      assert Enum.any?(result, &(&1.id == "home"))
+      assert Enum.any?(result, &(&1.id == "public"))
+      refute Enum.any?(result, &(&1.id == "admin"))
+    end
+
+    test "filters items based on list permissions" do
+      items = [
+        %{id: "home", label: "Home", navigate: "/", permissions: "read"},
+        %{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin"},
+        %{id: "write", label: "Write", navigate: "/write", permissions: "write"},
+        %{id: "public", label: "Public", navigate: "/public"}
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, ["read", "write"])
+      # home, write, and public
+      assert length(result) == 3
+      assert Enum.any?(result, &(&1.id == "home"))
+      assert Enum.any?(result, &(&1.id == "write"))
+      assert Enum.any?(result, &(&1.id == "public"))
+      refute Enum.any?(result, &(&1.id == "admin"))
+    end
+
+    test "handles list of required permissions (item requires multiple permissions)" do
+      items = [
+        %{id: "home", label: "Home", navigate: "/", permissions: ["read", "basic"]},
+        %{id: "admin", label: "Admin", navigate: "/admin", permissions: ["admin", "super"]},
+        %{id: "public", label: "Public", navigate: "/public"}
+      ]
+
+      # User has read but not basic
+      result = NavBuddy.filter_by_permissions(items, ["read"])
+      # only public
+      assert length(result) == 1
+      assert Enum.any?(result, &(&1.id == "public"))
+
+      # User has both read and basic
+      result = NavBuddy.filter_by_permissions(items, ["read", "basic"])
+      # home and public
+      assert length(result) == 2
+      assert Enum.any?(result, &(&1.id == "home"))
+      assert Enum.any?(result, &(&1.id == "public"))
+    end
+
+    test "filters nested dropdown items" do
+      items = [
+        %{
+          id: "menu",
+          label: "Menu",
+          dropdown: [
+            %{id: "item1", label: "Item 1", navigate: "/item1", permissions: "read"},
+            %{id: "item2", label: "Item 2", navigate: "/item2", permissions: "admin"},
+            %{id: "item3", label: "Item 3", navigate: "/item3"}
+          ]
+        }
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, "read")
+      dropdown_items = hd(result).dropdown
+      # item1 and item3
+      assert length(dropdown_items) == 2
+      assert Enum.any?(dropdown_items, &(&1.id == "item1"))
+      assert Enum.any?(dropdown_items, &(&1.id == "item3"))
+      refute Enum.any?(dropdown_items, &(&1.id == "item2"))
+    end
+
+    test "filters nested mega-menu items" do
+      items = [
+        %{
+          id: "products",
+          label: "Products",
+          mega_menu: %{
+            "category1" => [
+              %{id: "prod1", label: "Product 1", navigate: "/prod1", permissions: "read"},
+              %{id: "prod2", label: "Product 2", navigate: "/prod2", permissions: "admin"}
+            ],
+            "category2" => [
+              %{id: "prod3", label: "Product 3", navigate: "/prod3"}
+            ]
+          }
+        }
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, "read")
+      mega_menu = hd(result).mega_menu
+
+      category1_items = mega_menu["category1"]
+      # only prod1
+      assert length(category1_items) == 1
+      assert hd(category1_items).id == "prod1"
+
+      category2_items = mega_menu["category2"]
+      # prod3 (no permissions required)
+      assert length(category2_items) == 1
+    end
+
+    test "removes dropdown parent if all children are filtered out" do
+      items = [
+        %{
+          id: "admin_menu",
+          label: "Admin Menu",
+          dropdown: [
+            %{id: "admin1", label: "Admin 1", navigate: "/admin1", permissions: "admin"},
+            %{id: "admin2", label: "Admin 2", navigate: "/admin2", permissions: "admin"}
+          ]
+        },
+        %{id: "public", label: "Public", navigate: "/public"}
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, "read")
+      assert length(result) == 1
+      assert hd(result).id == "public"
+    end
+
+    test "removes mega-menu parent if all categories are empty" do
+      items = [
+        %{
+          id: "admin_products",
+          label: "Admin Products",
+          mega_menu: %{
+            "admin_only" => [
+              %{
+                id: "admin_prod",
+                label: "Admin Product",
+                navigate: "/admin",
+                permissions: "admin"
+              }
+            ]
+          }
+        },
+        %{id: "public", label: "Public", navigate: "/public"}
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, "read")
+      assert length(result) == 1
+      assert hd(result).id == "public"
+    end
+  end
 end
