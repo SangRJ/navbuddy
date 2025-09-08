@@ -1,7 +1,7 @@
 defmodule NavBuddy.MixProject do
   use Mix.Project
 
-  @version "0.2.3"
+  @version "0.2.5"
   @source_url "https://github.com/SangRJ/navbuddy"
 
   def project do
@@ -27,10 +27,10 @@ defmodule NavBuddy.MixProject do
 
   defp deps do
     [
-      {:phoenix, "~> 1.7.0"},
-      {:phoenix_live_view, "~> 0.20.0"},
-      {:phoenix_html, "~> 4.0"},
-      {:jason, "~> 1.0"},
+      {:phoenix, ">= 1.7.0"},
+      {:phoenix_live_view, ">= 0.20.0"},
+      {:phoenix_html, ">= 4.0.0"},
+      {:jason, ">= 1.0.0"},
 
       # Dev/test dependencies
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
