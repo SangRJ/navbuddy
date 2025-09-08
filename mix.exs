@@ -61,7 +61,7 @@ defmodule NavBuddy.MixProject do
       main: "NavBuddy",
       source_ref: "v#{@version}",
       source_url: @source_url,
-      extras: ["README.md"]
+      extras: ["README.md", "INTEGRATION_EXAMPLE.md", "LICENSE"]
     ]
   end
 end
