@@ -168,21 +168,21 @@ defmodule NavBuddy.Component do
 
   def nav_link(assigns) do
     ~H"""
-    <%= if @item.href do %>
+    <%= if @item.navigate do %>
       <a
-        href={@item.href}
+        href="#"
         class={["navbuddy-nav-link", if(@item.active, do: "active"), if(@item.disabled, do: "disabled")]}
         role="menuitem"
         tabindex={if @item.disabled, do: "-1", else: "0"}
         aria-disabled={to_string(!!@item.disabled)}
-        phx-click={JS.push("navbuddy:item_click", value: %{id: @item.id, href: @item.href})}
+        phx-click={JS.push("navbuddy:item_click", value: %{id: @item.id, navigate: @item.navigate})}
       >
         <.nav_icon :if={@item.icon} icon={@item.icon} />
         <span class="navbuddy-nav-text">{@item.label}</span>
       </a>
     <% else %>
       <span
-        class={["navbuddy-nav-link", "no-href", if(@item.disabled, do: "disabled")]}
+        class={["navbuddy-nav-link", "no-navigate", if(@item.disabled, do: "disabled")]}
         role="menuitem"
         tabindex={if @item.disabled, do: "-1", else: "0"}
         aria-disabled={to_string(!!@item.disabled)}
@@ -417,9 +417,9 @@ defmodule NavBuddy.Component do
         >
           <%= if index < length(@breadcrumbs) - 1 do %>
             <a
-              href={crumb.href}
+              href="#"
               class="navbuddy-breadcrumbs-link"
-              phx-click={JS.push("navbuddy:breadcrumb_click", value: %{id: crumb.id, href: crumb.href})}
+              phx-click={JS.push("navbuddy:breadcrumb_click", value: %{id: crumb.id, navigate: crumb.navigate})}
             >
               {crumb.label}
             </a>

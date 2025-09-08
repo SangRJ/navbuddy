@@ -15,17 +15,17 @@ defmodule NavBuddyTest do
 
   describe "validate_nav_item/1" do
     test "validates basic nav item" do
-      item = %{id: "home", label: "Home", href: "/"}
+      item = %{id: "home", label: "Home", navigate: "/"}
       assert {:ok, ^item} = NavBuddy.validate_nav_item(item)
     end
 
     test "rejects item without id" do
-      item = %{label: "Home", href: "/"}
+      item = %{label: "Home", navigate: "/"}
       assert {:error, _} = NavBuddy.validate_nav_item(item)
     end
 
     test "rejects item without label" do
-      item = %{id: "home", href: "/"}
+      item = %{id: "home", navigate: "/"}
       assert {:error, _} = NavBuddy.validate_nav_item(item)
     end
   end
@@ -41,8 +41,8 @@ defmodule NavBuddyTest do
   describe "find_active_item/2" do
     test "finds active item by path" do
       items = [
-        %{id: "home", label: "Home", href: "/"},
-        %{id: "about", label: "About", href: "/about"}
+        %{id: "home", label: "Home", navigate: "/"},
+        %{id: "about", label: "About", navigate: "/about"}
       ]
 
       result = NavBuddy.find_active_item(items, "/about")

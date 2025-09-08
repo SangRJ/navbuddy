@@ -12,15 +12,15 @@ defmodule NavBuddy do
 
         def navigation_items do
           [
-            %{id: "home", label: "Home", href: "/"},
-            %{id: "about", label: "About", href: "/about"},
+            %{id: "home", label: "Home", navigate: "/"},
+            %{id: "about", label: "About", navigate: "/about"},
             %{
               id: "products",
               label: "Products",
-              href: "/products",
+              navigate: "/products",
               dropdown: [
-                %{id: "web", label: "Web Apps", href: "/products/web"},
-                %{id: "mobile", label: "Mobile Apps", href: "/products/mobile"}
+                %{id: "web", label: "Web Apps", navigate: "/products/web"},
+                %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}
               ]
             }
           ]
@@ -46,19 +46,21 @@ defmodule NavBuddy do
 
   ## Navigation Structure
 
-  Navigation items support multiple levels of nesting and different types:
+  Navigation items support multiple levels of nesting and different types.
+  All navigation uses the `navigate` field which triggers LiveView's `push_navigate`
+  to maintain the LiveView connection without page reloads.
 
   ### Simple Links
-      %{id: "home", label: "Home", href: "/"}
+      %{id: "home", label: "Home", navigate: "/"}
 
   ### Dropdown Menus
       %{
         id: "products",
         label: "Products",
-        href: "/products",
+        navigate: "/products",
         dropdown: [
-          %{id: "web", label: "Web Development", href: "/products/web"},
-          %{id: "mobile", label: "Mobile Apps", href: "/products/mobile"}
+          %{id: "web", label: "Web Development", navigate: "/products/web"},
+          %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}
         ]
       }
 
@@ -71,8 +73,8 @@ defmodule NavBuddy do
             id: "development",
             label: "Development",
             dropdown: [
-              %{id: "frontend", label: "Frontend", href: "/services/frontend"},
-              %{id: "backend", label: "Backend", href: "/services/backend"}
+              %{id: "frontend", label: "Frontend", navigate: "/services/frontend"},
+              %{id: "backend", label: "Backend", navigate: "/services/backend"}
             ]
           }
         ]
@@ -89,15 +91,15 @@ defmodule NavBuddy do
             %{
               title: "For Small Business",
               items: [
-                %{id: "starter", label: "Starter Package", href: "/solutions/starter"},
-                %{id: "growth", label: "Growth Package", href: "/solutions/growth"}
+                %{id: "starter", label: "Starter Package", navigate: "/solutions/starter"},
+                %{id: "growth", label: "Growth Package", navigate: "/solutions/growth"}
               ]
             },
             %{
               title: "For Enterprise",
               items: [
-                %{id: "enterprise", label: "Enterprise Suite", href: "/solutions/enterprise"},
-                %{id: "custom", label: "Custom Solutions", href: "/solutions/custom"}
+                %{id: "enterprise", label: "Enterprise Suite", navigate: "/solutions/enterprise"},
+                %{id: "custom", label: "Custom Solutions", navigate: "/solutions/custom"}
               ]
             }
           ]
@@ -135,7 +137,7 @@ defmodule NavBuddy do
   @type nav_item :: %{
           id: String.t(),
           label: String.t(),
-          href: String.t() | nil,
+          navigate: String.t() | nil,
           icon: String.t() | nil,
           dropdown: [nav_item()] | nil,
           mega_menu: mega_menu() | nil,
@@ -191,9 +193,9 @@ defmodule NavBuddy do
 
   ## Examples
 
-      iex> item = %{id: "home", label: "Home", href: "/"}
+      iex> item = %{id: "home", label: "Home", navigate: "/"}
       iex> NavBuddy.validate_nav_item(item)
-      {:ok, %{id: "home", label: "Home", href: "/"}}
+      {:ok, %{id: "home", label: "Home", navigate: "/"}}
 
       iex> NavBuddy.validate_nav_item(%{label: "Home"})
       {:error, "Navigation item must have an id"}
@@ -281,9 +283,9 @@ defmodule NavBuddy do
 
   ## Examples
 
-      iex> items = [%{id: "home", href: "/"}, %{id: "about", href: "/about"}]
+      iex> items = [%{id: "home", navigate: "/"}, %{id: "about", navigate: "/about"}]
       iex> NavBuddy.find_active_item(items, "/about")
-      [%{id: "home", href: "/", active: false}, %{id: "about", href: "/about", active: true}]
+      [%{id: "home", navigate: "/", active: false}, %{id: "about", navigate: "/about", active: true}]
   """
   def find_active_item(items, current_path) when is_list(items) and is_binary(current_path) do
     Enum.map(items, fn item ->
@@ -292,9 +294,9 @@ defmodule NavBuddy do
     end)
   end
 
-  defp determine_active(%{href: href} = item, current_path) when is_binary(href) do
+  defp determine_active(%{navigate: navigate} = item, current_path) when is_binary(navigate) do
     cond do
-      href == current_path -> true
+      navigate == current_path -> true
       has_dropdown_active?(Map.get(item, :dropdown), current_path) -> true
       has_mega_menu_active?(Map.get(item, :mega_menu), current_path) -> true
       true -> false
@@ -322,9 +324,9 @@ defmodule NavBuddy do
 
   ## Examples
 
-      iex> items = [%{id: "home", label: "Home", href: "/"}]
+      iex> items = [%{id: "home", label: "Home", navigate: "/"}]
       iex> NavBuddy.generate_breadcrumbs(items, "/")
-      [%{id: "home", label: "Home", href: "/"}]
+      [%{id: "home", label: "Home", navigate: "/"}]
   """
   def generate_breadcrumbs(items, current_path) when is_list(items) and is_binary(current_path) do
     case find_breadcrumb_path(items, current_path, []) do
@@ -342,7 +344,7 @@ defmodule NavBuddy do
     end
   end
 
-  defp find_in_item(%{href: href}, current_path, path) when href == current_path do
+  defp find_in_item(%{navigate: navigate}, current_path, path) when navigate == current_path do
     path
   end
 

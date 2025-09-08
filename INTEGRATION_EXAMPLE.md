@@ -60,22 +60,20 @@ defmodule MyAppWeb.PageLive do
 
   defp navigation_items do
     [
-      %{id: "home", label: "Home", href: "/"},
-      %{id: "about", label: "About", href: "/about"},
+      %{id: "home", label: "Home", navigate: "/"},
+      %{id: "about", label: "About", navigate: "/about"},
       %{
         id: "products",
         label: "Products",
-        href: "/products",
+        navigate: "/products",
         dropdown: [
-          %{id: "web", label: "Web Apps", href: "/products/web"},
-          %{id: "mobile", label: "Mobile Apps", href: "/products/mobile"}
+          %{id: "web", label: "Web Apps", navigate: "/products/web"},
+          %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}
         ]
       },
-      %{id: "contact", label: "Contact", href: "/contact"}
+      %{id: "contact", label: "Contact", navigate: "/contact"}
     ]
-  end
-
-  # NavBuddy event handlers are automatically available when you import NavBuddy.LiveHelpers
+  end  # NavBuddy event handlers are automatically available when you import NavBuddy.LiveHelpers
 end
 ```
 

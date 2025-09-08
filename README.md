@@ -34,7 +34,7 @@ end
 Include the CSS and JavaScript in your layout:
 
 ```html
-<link rel="stylesheet" href="/assets/navbuddy.css">
+<link rel="stylesheet" href="/assets/navbuddy.css" />
 <script src="/assets/navbuddy.js"></script>
 ```
 
@@ -58,15 +58,15 @@ defmodule MyAppWeb.PageLive do
 
   defp navigation_items do
     [
-      %{id: "home", label: "Home", href: "/"},
-      %{id: "about", label: "About", href: "/about"},
+      %{id: "home", label: "Home", navigate: "/"},
+      %{id: "about", label: "About", navigate: "/about"},
       %{
         id: "products",
         label: "Products",
-        href: "/products",
+        navigate: "/products",
         dropdown: [
-          %{id: "web", label: "Web Apps", href: "/products/web"},
-          %{id: "mobile", label: "Mobile Apps", href: "/products/mobile"}
+          %{id: "web", label: "Web Apps", navigate: "/products/web"},
+          %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}
         ]
       }
     ]
@@ -79,7 +79,7 @@ end
 ### Simple Links
 
 ```elixir
-%{id: "home", label: "Home", href: "/", icon: "home"}
+%{id: "home", label: "Home", navigate: "/", icon: "home"}
 ```
 
 ### Single-Layer Dropdowns
@@ -88,11 +88,11 @@ end
 %{
   id: "products",
   label: "Products",
-  href: "/products",
+  navigate: "/products",
   icon: "package",
   dropdown: [
-    %{id: "web", label: "Web Development", href: "/products/web"},
-    %{id: "mobile", label: "Mobile Apps", href: "/products/mobile"}
+    %{id: "web", label: "Web Development", navigate: "/products/web"},
+    %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}
   ]
 }
 ```
@@ -108,8 +108,8 @@ end
       id: "development",
       label: "Development",
       dropdown: [
-        %{id: "frontend", label: "Frontend", href: "/services/frontend"},
-        %{id: "backend", label: "Backend", href: "/services/backend"}
+        %{id: "frontend", label: "Frontend", navigate: "/services/frontend"},
+        %{id: "backend", label: "Backend", navigate: "/services/backend"}
       ]
     }
   ]
@@ -130,16 +130,16 @@ end
         title: "For Small Business",
         description: "Perfect for startups",
         items: [
-          %{id: "starter", label: "Starter Package", href: "/solutions/starter"},
-          %{id: "growth", label: "Growth Package", href: "/solutions/growth"}
+          %{id: "starter", label: "Starter Package", navigate: "/solutions/starter"},
+          %{id: "growth", label: "Growth Package", navigate: "/solutions/growth"}
         ]
       },
       %{
         title: "For Enterprise",
         description: "Scalable solutions",
         items: [
-          %{id: "enterprise", label: "Enterprise Suite", href: "/solutions/enterprise"},
-          %{id: "custom", label: "Custom Solutions", href: "/solutions/custom"}
+          %{id: "enterprise", label: "Enterprise Suite", navigate: "/solutions/enterprise"},
+          %{id: "custom", label: "Custom Solutions", navigate: "/solutions/custom"}
         ]
       }
     ]
@@ -181,16 +181,16 @@ NavBuddy includes comprehensive LiveView helpers:
 defmodule MyAppWeb.PageLive do
   use MyAppWeb, :live_view
   use NavBuddy.LiveHelpers  # Adds event handlers
-  
+
   def mount(_params, _session, socket) do
-    socket = 
+    socket =
       socket
       |> assign_navbuddy_state()
       |> assign(:navigation_items, navigation_items())
-      
+
     {:ok, socket}
   end
-  
+
   # Event handlers are automatically available:
   # handle_event("navbuddy:item_click", ...)
   # handle_event("navbuddy:dropdown_toggle", ...)
@@ -274,9 +274,9 @@ NavBuddy is built with accessibility in mind:
 Automatic breadcrumb generation:
 
 ```elixir
-<.nav_breadcrumbs 
-  items={@navigation_items} 
-  current_path={@current_path} 
+<.nav_breadcrumbs
+  items={@navigation_items}
+  current_path={@current_path}
 />
 ```
 
@@ -338,20 +338,20 @@ Access the JavaScript API directly:
 
 ```javascript
 // Initialize manually
-const nav = new NavBuddy(document.querySelector('.navbuddy-nav'), {
+const nav = new NavBuddy(document.querySelector(".navbuddy-nav"), {
   smartPositioning: true,
   keyboardNavigation: true,
-  analytics: true
+  analytics: true,
 });
 
 // Methods
-nav.openDropdown('products');
-nav.closeMegaMenu('solutions');
+nav.openDropdown("products");
+nav.closeMegaMenu("solutions");
 nav.toggleMobileNav();
 nav.closeAllMenus();
 
 // Events
-nav.trackEvent('custom_event', { custom: 'data' });
+nav.trackEvent("custom_event", { custom: "data" });
 
 // State
 const state = nav.getState();
@@ -373,6 +373,7 @@ NavBuddy.example_navigation()
 ```
 
 This returns a comprehensive navigation structure showcasing all features:
+
 - Simple links with icons
 - Single and multi-level dropdowns
 - Mega menus with grid layouts

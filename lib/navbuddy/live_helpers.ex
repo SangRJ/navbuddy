@@ -48,10 +48,10 @@ defmodule NavBuddy.LiveHelpers do
 
   You can override the default event handlers by defining your own:
 
-      def handle_event("navbuddy:item_click", %{"id" => id, "href" => href}, socket) do
+      def handle_event("navbuddy:item_click", %{"id" => id, "navigate" => navigate}, socket) do
         # Custom logic here
         MyApp.Analytics.track_navigation(id)
-        {:noreply, push_navigate(socket, to: href)}
+        {:noreply, push_navigate(socket, to: navigate)}
       end
   """
 
@@ -190,7 +190,7 @@ defmodule NavBuddy.LiveHelpers do
 
   ## Examples
 
-      socket = track_nav_event(socket, :item_click, %{id: "home", href: "/"})
+      socket = track_nav_event(socket, :item_click, %{id: "home", navigate: "/"})
       socket = track_nav_event(socket, :dropdown_open, %{id: "products"})
   """
   def track_nav_event(socket, event_type, data \\ %{}) do
@@ -231,12 +231,12 @@ defmodule NavBuddy.LiveHelpers do
       def handle_event("navbuddy:item_click", %{"id" => id} = params, socket) do
         socket = track_nav_event(socket, :item_click, params)
 
-        case Map.get(params, "href") do
+        case Map.get(params, "navigate") do
           nil ->
             {:noreply, socket}
 
-          href ->
-            {:noreply, push_navigate(socket, to: href)}
+          navigate ->
+            {:noreply, push_navigate(socket, to: navigate)}
         end
       end
 
@@ -300,12 +300,12 @@ defmodule NavBuddy.LiveHelpers do
       def handle_event("navbuddy:breadcrumb_click", %{"id" => id} = params, socket) do
         socket = track_nav_event(socket, :breadcrumb_click, params)
 
-        case Map.get(params, "href") do
+        case Map.get(params, "navigate") do
           nil ->
             {:noreply, socket}
 
-          href ->
-            {:noreply, push_navigate(socket, to: href)}
+          navigate ->
+            {:noreply, push_navigate(socket, to: navigate)}
         end
       end
 
@@ -389,7 +389,7 @@ defmodule NavBuddy.LiveHelpers do
       analytics_data = nav_analytics_data(
         socket,
         :item_click,
-        %{id: "products", href: "/products"}
+        %{id: "products", navigate: "/products"}
       )
   """
   def nav_analytics_data(socket, event_type, event_data \\ %{}) do
