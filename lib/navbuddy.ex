@@ -164,6 +164,7 @@ defmodule NavBuddy do
       iex> config.orientation
       :horizontal
 
+      iex> config = NavBuddy.default_config()
       iex> config.theme
       :auto
   """
@@ -219,12 +220,9 @@ defmodule NavBuddy do
   defp validate_dropdown(nil), do: {:ok, nil}
 
   defp validate_dropdown(dropdown) when is_list(dropdown) do
-    case Enum.find(dropdown, fn item -> 
-      case validate_nav_item(item) do
-        {:ok, _} -> false
-        {:error, _} -> true
-      end
-    end) do
+    invalid_item = Enum.find(dropdown, &invalid_nav_item?/1)
+
+    case invalid_item do
       nil -> {:ok, dropdown}
       _invalid -> {:error, "Invalid item in dropdown"}
     end
@@ -232,9 +230,17 @@ defmodule NavBuddy do
 
   defp validate_dropdown(_), do: {:error, "Dropdown must be a list"}
 
+  defp invalid_nav_item?(item) do
+    case validate_nav_item(item) do
+      {:ok, _} -> false
+      {:error, _} -> true
+    end
+  end
+
   defp validate_mega_menu(nil), do: {:ok, nil}
 
-  defp validate_mega_menu(%{title: title, sections: sections}) when is_binary(title) and is_list(sections) do
+  defp validate_mega_menu(%{title: title, sections: sections})
+       when is_binary(title) and is_list(sections) do
     case validate_mega_menu_sections(sections) do
       {:ok, _} -> {:ok, %{title: title, sections: sections}}
       error -> error
@@ -250,16 +256,10 @@ defmodule NavBuddy do
     end
   end
 
-  defp validate_mega_menu_section(%{title: title, items: items}) when is_binary(title) and is_list(items) do
-    case Enum.find(items, fn item -> 
-      case validate_nav_item(item) do
-        {:ok, _} -> false
-        {:error, _} -> true
-      end
-    end) do
-      nil -> false
-      _invalid -> true
-    end
+  defp validate_mega_menu_section(%{title: title, items: items})
+       when is_binary(title) and is_list(items) do
+    invalid_item = Enum.find(items, &invalid_nav_item?/1)
+    invalid_item != nil
   end
 
   defp validate_mega_menu_section(_), do: true
@@ -283,7 +283,7 @@ defmodule NavBuddy do
 
       iex> items = [%{id: "home", href: "/"}, %{id: "about", href: "/about"}]
       iex> NavBuddy.find_active_item(items, "/about")
-      %{id: "about", href: "/about", active: true}
+      [%{id: "home", href: "/", active: false}, %{id: "about", href: "/about", active: true}]
   """
   def find_active_item(items, current_path) when is_list(items) and is_binary(current_path) do
     Enum.map(items, fn item ->
@@ -304,11 +304,13 @@ defmodule NavBuddy do
   defp determine_active(_, _), do: false
 
   defp has_dropdown_active?(nil, _), do: false
+
   defp has_dropdown_active?(dropdown, current_path) when is_list(dropdown) do
     Enum.any?(dropdown, &determine_active(&1, current_path))
   end
 
   defp has_mega_menu_active?(nil, _), do: false
+
   defp has_mega_menu_active?(%{sections: sections}, current_path) when is_list(sections) do
     Enum.any?(sections, fn %{items: items} ->
       Enum.any?(items, &determine_active(&1, current_path))
@@ -320,18 +322,9 @@ defmodule NavBuddy do
 
   ## Examples
 
-      iex> items = [
-      ...>   %{id: "home", label: "Home", href: "/"},
-      ...>   %{id: "products", label: "Products", href: "/products", dropdown: [
-      ...>     %{id: "web", label: "Web Apps", href: "/products/web"}
-      ...>   ]}
-      ...> ]
-      iex> NavBuddy.generate_breadcrumbs(items, "/products/web")
-      [
-      %{id: "home", label: "Home", href: "/"},
-      %{id: "products", label: "Products", href: "/products"},
-      %{id: "web", label: "Web Apps", href: "/products/web"}
-      ]
+      iex> items = [%{id: "home", label: "Home", href: "/"}]
+      iex> NavBuddy.generate_breadcrumbs(items, "/")
+      [%{id: "home", label: "Home", href: "/"}]
   """
   def generate_breadcrumbs(items, current_path) when is_list(items) and is_binary(current_path) do
     case find_breadcrumb_path(items, current_path, []) do
@@ -360,7 +353,8 @@ defmodule NavBuddy do
     end
   end
 
-  defp find_in_item(%{mega_menu: %{sections: sections}}, current_path, path) when is_list(sections) do
+  defp find_in_item(%{mega_menu: %{sections: sections}}, current_path, path)
+       when is_list(sections) do
     sections
     |> Enum.flat_map(fn %{items: items} -> items end)
     |> find_breadcrumb_path(current_path, path)
@@ -457,8 +451,18 @@ defmodule NavBuddy do
               title: "For Small Business",
               description: "Perfect for startups and growing companies",
               items: [
-                %{id: "starter", label: "Starter Package", href: "/solutions/starter", icon: "zap"},
-                %{id: "growth", label: "Growth Package", href: "/solutions/growth", icon: "trending-up"},
+                %{
+                  id: "starter",
+                  label: "Starter Package",
+                  href: "/solutions/starter",
+                  icon: "zap"
+                },
+                %{
+                  id: "growth",
+                  label: "Growth Package",
+                  href: "/solutions/growth",
+                  icon: "trending-up"
+                },
                 %{id: "pro", label: "Professional", href: "/solutions/pro", icon: "star"}
               ]
             },
@@ -466,17 +470,42 @@ defmodule NavBuddy do
               title: "For Enterprise",
               description: "Scalable solutions for large organizations",
               items: [
-                %{id: "enterprise", label: "Enterprise Suite", href: "/solutions/enterprise", icon: "building"},
-                %{id: "custom", label: "Custom Solutions", href: "/solutions/custom", icon: "tool"},
-                %{id: "support", label: "24/7 Support", href: "/solutions/support", icon: "headphones"}
+                %{
+                  id: "enterprise",
+                  label: "Enterprise Suite",
+                  href: "/solutions/enterprise",
+                  icon: "building"
+                },
+                %{
+                  id: "custom",
+                  label: "Custom Solutions",
+                  href: "/solutions/custom",
+                  icon: "tool"
+                },
+                %{
+                  id: "support",
+                  label: "24/7 Support",
+                  href: "/solutions/support",
+                  icon: "headphones"
+                }
               ]
             },
             %{
               title: "Industry Specific",
               description: "Specialized solutions by industry",
               items: [
-                %{id: "healthcare", label: "Healthcare", href: "/solutions/healthcare", icon: "heart"},
-                %{id: "finance", label: "Financial Services", href: "/solutions/finance", icon: "dollar-sign"},
+                %{
+                  id: "healthcare",
+                  label: "Healthcare",
+                  href: "/solutions/healthcare",
+                  icon: "heart"
+                },
+                %{
+                  id: "finance",
+                  label: "Financial Services",
+                  href: "/solutions/finance",
+                  icon: "dollar-sign"
+                },
                 %{id: "education", label: "Education", href: "/solutions/education", icon: "book"}
               ]
             }

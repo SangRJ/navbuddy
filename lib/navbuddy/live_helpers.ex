@@ -12,16 +12,16 @@ defmodule NavBuddy.LiveHelpers do
       defmodule MyAppWeb.PageLive do
         use MyAppWeb, :live_view
         import NavBuddy.LiveHelpers
-        
+
         def mount(_params, _session, socket) do
-          socket = 
+          socket =
             socket
             |> assign_navbuddy_state()
             |> assign(:navigation_items, MyApp.Navigation.items())
-            
+
           {:ok, socket}
         end
-        
+
         # NavBuddy event handlers are automatically available
       end
 
@@ -56,6 +56,7 @@ defmodule NavBuddy.LiveHelpers do
   """
 
   import Phoenix.LiveView
+  import Phoenix.Component, only: [assign: 3]
 
   alias NavBuddy.Config
 
@@ -70,8 +71,8 @@ defmodule NavBuddy.LiveHelpers do
   ## Examples
 
       socket = assign_navbuddy_state(socket)
-      
-      socket = assign_navbuddy_state(socket, 
+
+      socket = assign_navbuddy_state(socket,
         config: %NavBuddy.Config{theme: :dark},
         mobile_open: false
       )
@@ -93,7 +94,7 @@ defmodule NavBuddy.LiveHelpers do
   ## Examples
 
       socket = update_navbuddy_config(socket, %NavBuddy.Config{theme: :dark})
-      
+
       socket = update_navbuddy_config(socket, fn config ->
         %{config | orientation: :vertical}
       end)
@@ -114,7 +115,7 @@ defmodule NavBuddy.LiveHelpers do
   ## Examples
 
       socket = toggle_mobile_nav(socket)
-      
+
       socket = toggle_mobile_nav(socket, true)  # Force open
       socket = toggle_mobile_nav(socket, false) # Force close
   """
@@ -143,7 +144,8 @@ defmodule NavBuddy.LiveHelpers do
   def set_active_dropdown(socket, dropdown_id) do
     socket
     |> assign(:navbuddy_active_dropdown, dropdown_id)
-    |> assign(:navbuddy_active_mega_menu, nil)  # Close mega menu when dropdown opens
+    # Close mega menu when dropdown opens
+    |> assign(:navbuddy_active_mega_menu, nil)
     |> push_event("navbuddy:dropdown_state_changed", %{
       active_dropdown: dropdown_id,
       active_mega_menu: nil
@@ -161,7 +163,8 @@ defmodule NavBuddy.LiveHelpers do
   def set_active_mega_menu(socket, mega_menu_id) do
     socket
     |> assign(:navbuddy_active_mega_menu, mega_menu_id)
-    |> assign(:navbuddy_active_dropdown, nil)  # Close dropdown when mega menu opens
+    # Close dropdown when mega menu opens
+    |> assign(:navbuddy_active_dropdown, nil)
     |> push_event("navbuddy:mega_menu_state_changed", %{
       active_dropdown: nil,
       active_mega_menu: mega_menu_id
@@ -251,7 +254,10 @@ defmodule NavBuddy.LiveHelpers do
         socket =
           socket
           |> set_active_dropdown(new_dropdown)
-          |> track_nav_event(:dropdown_toggle, %{id: id, state: if(new_dropdown, do: "open", else: "close")})
+          |> track_nav_event(:dropdown_toggle, %{
+            id: id,
+            state: if(new_dropdown, do: "open", else: "close")
+          })
 
         {:noreply, socket}
       end
@@ -270,7 +276,10 @@ defmodule NavBuddy.LiveHelpers do
         socket =
           socket
           |> set_active_mega_menu(new_mega_menu)
-          |> track_nav_event(:mega_menu_toggle, %{id: id, state: if(new_mega_menu, do: "open", else: "close")})
+          |> track_nav_event(:mega_menu_toggle, %{
+            id: id,
+            state: if(new_mega_menu, do: "open", else: "close")
+          })
 
         {:noreply, socket}
       end
@@ -280,7 +289,9 @@ defmodule NavBuddy.LiveHelpers do
         socket =
           socket
           |> toggle_mobile_nav()
-          |> track_nav_event(:mobile_toggle, %{state: if(socket.assigns[:navbuddy_mobile_open], do: "open", else: "close")})
+          |> track_nav_event(:mobile_toggle, %{
+            state: if(socket.assigns[:navbuddy_mobile_open], do: "open", else: "close")
+          })
 
         {:noreply, socket}
       end
@@ -307,10 +318,14 @@ defmodule NavBuddy.LiveHelpers do
       def handle_event("navbuddy:toggle_orientation", _params, socket) do
         socket =
           update_navbuddy_config(socket, fn config ->
-            new_orientation = if config.orientation == :horizontal, do: :vertical, else: :horizontal
+            new_orientation =
+              if config.orientation == :horizontal, do: :vertical, else: :horizontal
+
             %{config | orientation: new_orientation}
           end)
-          |> track_nav_event(:orientation_toggle, %{orientation: socket.assigns.navbuddy_config.orientation})
+          |> track_nav_event(:orientation_toggle, %{
+            orientation: socket.assigns.navbuddy_config.orientation
+          })
 
         {:noreply, socket}
       end
@@ -356,7 +371,10 @@ defmodule NavBuddy.LiveHelpers do
       "navbuddy-trigger-#{config.dropdown_trigger}",
       "navbuddy-mobile-#{config.mobile_behavior}",
       if(mobile_open, do: "navbuddy-mobile-open", else: "navbuddy-mobile-closed"),
-      if(config.animations, do: "navbuddy-animations-enabled", else: "navbuddy-animations-disabled"),
+      if(config.animations,
+        do: "navbuddy-animations-enabled",
+        else: "navbuddy-animations-disabled"
+      ),
       if(config.accessibility, do: "navbuddy-accessibility-enabled"),
       if(config.touch_gestures, do: "navbuddy-touch-enabled")
     ]

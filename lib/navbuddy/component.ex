@@ -42,7 +42,6 @@ defmodule NavBuddy.Component do
   """
 
   use Phoenix.Component
-  import Phoenix.HTML.Form
 
   alias NavBuddy.Config
   alias Phoenix.LiveView.JS
@@ -71,12 +70,12 @@ defmodule NavBuddy.Component do
         class="my-custom-nav"
       />
   """
-  attr :items, :list, required: true
-  attr :config, NavBuddy.Config, default: %NavBuddy.Config{}
-  attr :current_path, :string, default: nil
-  attr :id, :string, default: "navbuddy-nav"
-  attr :class, :string, default: ""
-  attr :rest, :global
+  attr(:items, :list, required: true)
+  attr(:config, NavBuddy.Config, default: %NavBuddy.Config{})
+  attr(:current_path, :string, default: nil)
+  attr(:id, :string, default: "navbuddy-nav")
+  attr(:class, :string, default: "")
+  attr(:rest, :global)
 
   def nav_menu(assigns) do
     assigns = assign_nav_data(assigns)
@@ -121,12 +120,12 @@ defmodule NavBuddy.Component do
 
   Supports simple links, dropdown menus, and mega menus.
   """
-  attr :item, :map, required: true
-  attr :config, NavBuddy.Config, required: true
-  attr :nav_id, :string, required: true
-  attr :index, :integer, required: true
-  attr :current_path, :string, default: nil
-  attr :level, :integer, default: 1
+  attr(:item, :map, required: true)
+  attr(:config, NavBuddy.Config, required: true)
+  attr(:nav_id, :string, required: true)
+  attr(:index, :integer, required: true)
+  attr(:current_path, :string, default: nil)
+  attr(:level, :integer, default: 1)
 
   def nav_item(assigns) do
     assigns = assign_item_data(assigns)
@@ -142,7 +141,7 @@ defmodule NavBuddy.Component do
             nav_id={@nav_id}
             item_id={@item.id}
           />
-        
+
         <% @item.dropdown -> %>
           <.dropdown_trigger item={@item} config={@config} nav_id={@nav_id} />
           <.dropdown_menu
@@ -153,7 +152,7 @@ defmodule NavBuddy.Component do
             level={@level + 1}
             current_path={@current_path}
           />
-        
+
         <% true -> %>
           <.nav_link item={@item} config={@config} />
       <% end %>
@@ -164,8 +163,8 @@ defmodule NavBuddy.Component do
   @doc """
   Renders a navigation link.
   """
-  attr :item, :map, required: true
-  attr :config, NavBuddy.Config, required: true
+  attr(:item, :map, required: true)
+  attr(:config, NavBuddy.Config, required: true)
 
   def nav_link(assigns) do
     ~H"""
@@ -198,12 +197,13 @@ defmodule NavBuddy.Component do
   @doc """
   Renders a dropdown trigger button.
   """
-  attr :item, :map, required: true
-  attr :config, NavBuddy.Config, required: true
-  attr :nav_id, :string, required: true
+  attr(:item, :map, required: true)
+  attr(:config, NavBuddy.Config, required: true)
+  attr(:nav_id, :string, required: true)
 
   def dropdown_trigger(assigns) do
-    assigns = assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.item.id))
+    assigns =
+      assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.item.id))
 
     ~H"""
     <button
@@ -230,12 +230,13 @@ defmodule NavBuddy.Component do
   @doc """
   Renders a mega menu trigger button.
   """
-  attr :item, :map, required: true
-  attr :config, NavBuddy.Config, required: true
-  attr :nav_id, :string, required: true
+  attr(:item, :map, required: true)
+  attr(:config, NavBuddy.Config, required: true)
+  attr(:nav_id, :string, required: true)
 
   def mega_menu_trigger(assigns) do
-    assigns = assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.item.id))
+    assigns =
+      assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.item.id))
 
     ~H"""
     <button
@@ -262,15 +263,16 @@ defmodule NavBuddy.Component do
   @doc """
   Renders a dropdown menu.
   """
-  attr :items, :list, required: true
-  attr :config, NavBuddy.Config, required: true
-  attr :nav_id, :string, required: true
-  attr :parent_id, :string, required: true
-  attr :level, :integer, default: 2
-  attr :current_path, :string, default: nil
+  attr(:items, :list, required: true)
+  attr(:config, NavBuddy.Config, required: true)
+  attr(:nav_id, :string, required: true)
+  attr(:parent_id, :string, required: true)
+  attr(:level, :integer, default: 2)
+  attr(:current_path, :string, default: nil)
 
   def dropdown_menu(assigns) do
-    assigns = assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.parent_id))
+    assigns =
+      assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.parent_id))
 
     ~H"""
     <div
@@ -303,13 +305,14 @@ defmodule NavBuddy.Component do
   @doc """
   Renders a mega menu.
   """
-  attr :menu, :map, required: true
-  attr :config, NavBuddy.Config, required: true
-  attr :nav_id, :string, required: true
-  attr :item_id, :string, required: true
+  attr(:menu, :map, required: true)
+  attr(:config, NavBuddy.Config, required: true)
+  attr(:nav_id, :string, required: true)
+  attr(:item_id, :string, required: true)
 
   def mega_menu(assigns) do
-    assigns = assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.item_id))
+    assigns =
+      assign(assigns, :menu_id, NavBuddy.generate_menu_id(assigns.nav_id, assigns.item_id))
 
     ~H"""
     <div
@@ -358,8 +361,8 @@ defmodule NavBuddy.Component do
   @doc """
   Renders the mobile navigation toggle button.
   """
-  attr :id, :string, required: true
-  attr :class, :string, default: ""
+  attr(:id, :string, required: true)
+  attr(:class, :string, default: "")
 
   def mobile_nav_toggle(assigns) do
     ~H"""
@@ -385,14 +388,19 @@ defmodule NavBuddy.Component do
   @doc """
   Renders navigation breadcrumbs.
   """
-  attr :items, :list, required: true
-  attr :current_path, :string, required: true
-  attr :config, NavBuddy.Config, default: %NavBuddy.Config{}
-  attr :id, :string, default: "navbuddy-breadcrumbs"
-  attr :class, :string, default: ""
+  attr(:items, :list, required: true)
+  attr(:current_path, :string, required: true)
+  attr(:config, NavBuddy.Config, default: %NavBuddy.Config{})
+  attr(:id, :string, default: "navbuddy-breadcrumbs")
+  attr(:class, :string, default: "")
 
   def nav_breadcrumbs(assigns) do
-    assigns = assign(assigns, :breadcrumbs, NavBuddy.generate_breadcrumbs(assigns.items, assigns.current_path))
+    assigns =
+      assign(
+        assigns,
+        :breadcrumbs,
+        NavBuddy.generate_breadcrumbs(assigns.items, assigns.current_path)
+      )
 
     ~H"""
     <nav
@@ -430,9 +438,9 @@ defmodule NavBuddy.Component do
   @doc """
   Renders a navigation icon.
   """
-  attr :icon, :string, required: true
-  attr :class, :string, default: ""
-  attr :rest, :global
+  attr(:icon, :string, required: true)
+  attr(:class, :string, default: "")
+  attr(:rest, :global)
 
   def nav_icon(assigns) do
     ~H"""

@@ -110,21 +110,31 @@ defmodule NavBuddy.Config do
 
   defp validate_dropdown_trigger(:hover), do: :ok
   defp validate_dropdown_trigger(:click), do: :ok
-  defp validate_dropdown_trigger(other), do: {:error, "Invalid dropdown_trigger: #{inspect(other)}"}
+
+  defp validate_dropdown_trigger(other),
+    do: {:error, "Invalid dropdown_trigger: #{inspect(other)}"}
 
   defp validate_mobile_behavior(:drawer), do: :ok
   defp validate_mobile_behavior(:collapse), do: :ok
   defp validate_mobile_behavior(:overlay), do: :ok
   defp validate_mobile_behavior(other), do: {:error, "Invalid mobile_behavior: #{inspect(other)}"}
 
-  defp validate_mobile_breakpoint(breakpoint) when is_integer(breakpoint) and breakpoint > 0, do: :ok
-  defp validate_mobile_breakpoint(other), do: {:error, "Mobile breakpoint must be a positive integer, got: #{inspect(other)}"}
+  defp validate_mobile_breakpoint(breakpoint) when is_integer(breakpoint) and breakpoint > 0,
+    do: :ok
 
-  defp validate_max_dropdown_depth(depth) when is_integer(depth) and depth > 0 and depth <= 10, do: :ok
-  defp validate_max_dropdown_depth(other), do: {:error, "Max dropdown depth must be between 1 and 10, got: #{inspect(other)}"}
+  defp validate_mobile_breakpoint(other),
+    do: {:error, "Mobile breakpoint must be a positive integer, got: #{inspect(other)}"}
+
+  defp validate_max_dropdown_depth(depth) when is_integer(depth) and depth > 0 and depth <= 10,
+    do: :ok
+
+  defp validate_max_dropdown_depth(other),
+    do: {:error, "Max dropdown depth must be between 1 and 10, got: #{inspect(other)}"}
 
   defp validate_auto_close_delay(delay) when is_integer(delay) and delay >= 0, do: :ok
-  defp validate_auto_close_delay(other), do: {:error, "Auto close delay must be a non-negative integer, got: #{inspect(other)}"}
+
+  defp validate_auto_close_delay(other),
+    do: {:error, "Auto close delay must be a non-negative integer, got: #{inspect(other)}"}
 
   @doc """
   Merges two configurations, with the second taking precedence.

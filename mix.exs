@@ -31,7 +31,7 @@ defmodule NavBuddy.MixProject do
       {:phoenix_live_view, "~> 0.20.0"},
       {:phoenix_html, "~> 4.0"},
       {:jason, "~> 1.0"},
-      
+
       # Dev/test dependencies
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
