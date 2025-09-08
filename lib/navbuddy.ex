@@ -156,27 +156,29 @@ defmodule NavBuddy do
   # The Config module will be referenced as NavBuddy.Config throughout
 
   @type nav_item :: %{
-          id: String.t(),
-          label: String.t(),
-          navigate: String.t() | nil,
-          icon: String.t() | nil,
-          dropdown: [nav_item()] | nil,
-          mega_menu: mega_menu() | nil,
-          active: boolean() | nil,
-          disabled: boolean() | nil,
-          permissions: String.t() | [String.t()] | nil
+          required(:id) => String.t(),
+          required(:label) => String.t(),
+          optional(:navigate) => String.t(),
+          optional(:icon) => String.t(),
+          optional(:dropdown) => [nav_item()],
+          optional(:mega_menu) => mega_menu() | simple_mega_menu(),
+          optional(:active) => boolean(),
+          optional(:disabled) => boolean(),
+          optional(:permissions) => String.t() | [String.t()]
         }
 
+  @type simple_mega_menu :: %{String.t() => [nav_item()]}
+
   @type mega_menu :: %{
-          title: String.t(),
-          description: String.t() | nil,
-          sections: [mega_menu_section()]
+          required(:title) => String.t(),
+          optional(:description) => String.t(),
+          required(:sections) => [mega_menu_section()]
         }
 
   @type mega_menu_section :: %{
-          title: String.t(),
-          description: String.t() | nil,
-          items: [nav_item()]
+          required(:title) => String.t(),
+          optional(:description) => String.t(),
+          required(:items) => [nav_item()]
         }
 
   @doc """
@@ -220,73 +222,343 @@ defmodule NavBuddy do
       {:ok, %{id: "home", label: "Home", navigate: "/"}}
 
       iex> NavBuddy.validate_nav_item(%{label: "Home"})
-      {:error, "Navigation item must have an id"}
+      {:error, "Navigation item missing required field 'id'. Required fields: id (string), label (string). Optional fields: navigate, icon, dropdown, mega_menu, active, disabled, permissions"}
   """
-  def validate_nav_item(%{id: id, label: label} = item) when is_binary(id) and is_binary(label) do
-    with {:ok, _} <- validate_dropdown(Map.get(item, :dropdown)),
+  def validate_nav_item(item) when is_map(item) do
+    with :ok <- validate_required_fields(item),
+         :ok <- validate_field_types(item),
+         :ok <- validate_navigation_logic(item),
+         {:ok, _} <- validate_dropdown(Map.get(item, :dropdown)),
          {:ok, _} <- validate_mega_menu(Map.get(item, :mega_menu)) do
       {:ok, item}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  def validate_nav_item(%{label: _}) do
-    {:error, "Navigation item must have an id"}
+  def validate_nav_item(item) do
+    {:error, "Navigation item must be a map, got: #{inspect(item)}"}
   end
 
-  def validate_nav_item(%{id: _}) do
-    {:error, "Navigation item must have a label"}
-  end
+  @doc """
+  Validates a list of navigation items.
 
-  def validate_nav_item(_) do
-    {:error, "Navigation item must have id and label"}
-  end
+  ## Examples
 
-  defp validate_dropdown(nil), do: {:ok, nil}
-
-  defp validate_dropdown(dropdown) when is_list(dropdown) do
-    invalid_item = Enum.find(dropdown, &invalid_nav_item?/1)
-
-    case invalid_item do
-      nil -> {:ok, dropdown}
-      _invalid -> {:error, "Invalid item in dropdown"}
-    end
-  end
-
-  defp validate_dropdown(_), do: {:error, "Dropdown must be a list"}
-
-  defp invalid_nav_item?(item) do
-    case validate_nav_item(item) do
-      {:ok, _} -> false
-      {:error, _} -> true
-    end
-  end
-
-  defp validate_mega_menu(nil), do: {:ok, nil}
-
-  defp validate_mega_menu(%{title: title, sections: sections})
-       when is_binary(title) and is_list(sections) do
-    case validate_mega_menu_sections(sections) do
-      {:ok, _} -> {:ok, %{title: title, sections: sections}}
+      iex> items = [%{id: "home", label: "Home"}]
+      iex> NavBuddy.validate_nav_items(items)
+      {:ok, [%{id: "home", label: "Home"}]}
+  """
+  def validate_nav_items(items) when is_list(items) do
+    Enum.reduce_while(items, {:ok, []}, fn item, {:ok, acc} ->
+      case validate_nav_item(item) do
+        {:ok, validated_item} -> {:cont, {:ok, [validated_item | acc]}}
+        {:error, reason} -> {:halt, {:error, "Invalid navigation item: #{reason}"}}
+      end
+    end)
+    |> case do
+      {:ok, validated_items} -> {:ok, Enum.reverse(validated_items)}
       error -> error
     end
   end
 
-  defp validate_mega_menu(_), do: {:error, "Mega menu must have title and sections"}
+  def validate_nav_items(items) do
+    {:error, "Navigation items must be a list, got: #{inspect(items)}"}
+  end
+
+  defp validate_required_fields(%{id: id, label: label})
+       when is_binary(id) and is_binary(label) do
+    :ok
+  end
+
+  defp validate_required_fields(%{id: id}) when is_binary(id) do
+    {:error,
+     "Navigation item missing required field 'label'. Required fields: id (string), label (string). Optional fields: navigate, icon, dropdown, mega_menu, active, disabled, permissions"}
+  end
+
+  defp validate_required_fields(%{label: label}) when is_binary(label) do
+    {:error,
+     "Navigation item missing required field 'id'. Required fields: id (string), label (string). Optional fields: navigate, icon, dropdown, mega_menu, active, disabled, permissions"}
+  end
+
+  defp validate_required_fields(%{id: id}) do
+    {:error, "Navigation item field 'id' must be a string, got: #{inspect(id)}"}
+  end
+
+  defp validate_required_fields(%{label: label}) do
+    {:error, "Navigation item field 'label' must be a string, got: #{inspect(label)}"}
+  end
+
+  defp validate_required_fields(_) do
+    {:error,
+     "Navigation item missing required fields 'id' and 'label'. Required fields: id (string), label (string). Optional fields: navigate, icon, dropdown, mega_menu, active, disabled, permissions"}
+  end
+
+  defp validate_field_types(item) do
+    Enum.reduce_while(item, :ok, fn {key, value}, :ok ->
+      case validate_field_type(key, value) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp validate_field_type(:navigate, value) when is_binary(value), do: :ok
+  defp validate_field_type(:navigate, nil), do: :ok
+
+  defp validate_field_type(:navigate, value),
+    do: {:error, "Field 'navigate' must be a string, got: #{inspect(value)}"}
+
+  defp validate_field_type(:icon, value) when is_binary(value), do: :ok
+  defp validate_field_type(:icon, nil), do: :ok
+
+  defp validate_field_type(:icon, value),
+    do: {:error, "Field 'icon' must be a string, got: #{inspect(value)}"}
+
+  defp validate_field_type(:active, value) when is_boolean(value), do: :ok
+  defp validate_field_type(:active, nil), do: :ok
+
+  defp validate_field_type(:active, value),
+    do: {:error, "Field 'active' must be a boolean, got: #{inspect(value)}"}
+
+  defp validate_field_type(:disabled, value) when is_boolean(value), do: :ok
+  defp validate_field_type(:disabled, nil), do: :ok
+
+  defp validate_field_type(:disabled, value),
+    do: {:error, "Field 'disabled' must be a boolean, got: #{inspect(value)}"}
+
+  defp validate_field_type(:permissions, value) when is_binary(value), do: :ok
+
+  defp validate_field_type(:permissions, value) when is_list(value) do
+    if Enum.all?(value, &is_binary/1) do
+      :ok
+    else
+      {:error,
+       "Field 'permissions' when a list must contain only strings, got: #{inspect(value)}"}
+    end
+  end
+
+  defp validate_field_type(:permissions, nil), do: :ok
+
+  defp validate_field_type(:permissions, value),
+    do:
+      {:error, "Field 'permissions' must be a string or list of strings, got: #{inspect(value)}"}
+
+  defp validate_field_type(:dropdown, value) when is_list(value), do: :ok
+  defp validate_field_type(:dropdown, nil), do: :ok
+
+  defp validate_field_type(:dropdown, value),
+    do: {:error, "Field 'dropdown' must be a list of navigation items, got: #{inspect(value)}"}
+
+  defp validate_field_type(:mega_menu, value) when is_map(value), do: :ok
+  defp validate_field_type(:mega_menu, nil), do: :ok
+
+  defp validate_field_type(:mega_menu, value),
+    do: {:error, "Field 'mega_menu' must be a map, got: #{inspect(value)}"}
+
+  # Allow id and label since they're already validated above
+  defp validate_field_type(:id, _), do: :ok
+  defp validate_field_type(:label, _), do: :ok
+
+  defp validate_field_type(key, value),
+    do:
+      {:error,
+       "Unknown field '#{key}' with value #{inspect(value)}. Allowed fields: id, label, navigate, icon, dropdown, mega_menu, active, disabled, permissions"}
+
+  defp validate_navigation_logic(%{dropdown: dropdown, mega_menu: mega_menu})
+       when not is_nil(dropdown) and not is_nil(mega_menu) do
+    {:error,
+     "Navigation item cannot have both 'dropdown' and 'mega_menu'. Choose one or the other."}
+  end
+
+  defp validate_navigation_logic(%{dropdown: dropdown, navigate: navigate})
+       when not is_nil(dropdown) and not is_nil(navigate) do
+    {:error,
+     "Navigation item with 'dropdown' should not have 'navigate' field. Dropdown items should navigate through their child items."}
+  end
+
+  defp validate_navigation_logic(%{mega_menu: mega_menu, navigate: navigate})
+       when not is_nil(mega_menu) and not is_nil(navigate) do
+    {:error,
+     "Navigation item with 'mega_menu' should not have 'navigate' field. Mega menu items should navigate through their child items."}
+  end
+
+  defp validate_navigation_logic(_), do: :ok
+
+  defp validate_dropdown(nil), do: {:ok, nil}
+
+  defp validate_dropdown(dropdown) when is_list(dropdown) do
+    case validate_nav_items(dropdown) do
+      {:ok, _} -> {:ok, dropdown}
+      {:error, reason} -> {:error, "Invalid dropdown items: #{reason}"}
+    end
+  end
+
+  defp validate_dropdown(dropdown),
+    do: {:error, "Dropdown must be a list of navigation items, got: #{inspect(dropdown)}"}
+
+  defp validate_mega_menu(nil), do: {:ok, nil}
+
+  # Handle simple mega menu: %{"Category" => [items]}
+  defp validate_mega_menu(mega_menu) when is_map(mega_menu) do
+    # Check if it's a simple mega menu (all values are lists)
+    if Enum.all?(mega_menu, fn {key, value} -> is_binary(key) and is_list(value) end) do
+      validate_simple_mega_menu(mega_menu)
+    else
+      validate_structured_mega_menu(mega_menu)
+    end
+  end
+
+  defp validate_mega_menu(mega_menu),
+    do: {:error, "Mega menu must be a map, got: #{inspect(mega_menu)}"}
+
+  defp validate_simple_mega_menu(mega_menu) do
+    Enum.reduce_while(mega_menu, {:ok, mega_menu}, fn {category, items}, {:ok, acc} ->
+      case validate_nav_items(items) do
+        {:ok, _} ->
+          {:cont, {:ok, acc}}
+
+        {:error, reason} ->
+          {:halt, {:error, "Invalid items in mega menu category '#{category}': #{reason}"}}
+      end
+    end)
+  end
+
+  defp validate_structured_mega_menu(%{title: title, sections: sections})
+       when is_binary(title) and is_list(sections) do
+    case validate_mega_menu_sections(sections) do
+      {:ok, _} -> {:ok, %{title: title, sections: sections}}
+      {:error, reason} -> {:error, "Invalid mega menu sections: #{reason}"}
+    end
+  end
+
+  defp validate_structured_mega_menu(%{sections: sections}) when is_list(sections) do
+    {:error,
+     "Structured mega menu missing required field 'title'. Required: title (string), sections (list). Optional: description (string)"}
+  end
+
+  defp validate_structured_mega_menu(%{title: title}) when is_binary(title) do
+    {:error,
+     "Structured mega menu missing required field 'sections'. Required: title (string), sections (list). Optional: description (string)"}
+  end
+
+  defp validate_structured_mega_menu(%{title: title}) do
+    {:error, "Structured mega menu field 'title' must be a string, got: #{inspect(title)}"}
+  end
+
+  defp validate_structured_mega_menu(%{sections: sections}) do
+    {:error, "Structured mega menu field 'sections' must be a list, got: #{inspect(sections)}"}
+  end
+
+  defp validate_structured_mega_menu(mega_menu) do
+    {:error,
+     "Structured mega menu missing required fields. Required: title (string), sections (list). Optional: description (string). Got: #{inspect(mega_menu)}"}
+  end
 
   defp validate_mega_menu_sections(sections) do
-    case Enum.find(sections, &validate_mega_menu_section/1) do
-      nil -> {:ok, sections}
-      _invalid -> {:error, "Invalid section in mega menu"}
+    Enum.reduce_while(sections, {:ok, []}, fn section, {:ok, acc} ->
+      case validate_mega_menu_section(section) do
+        {:ok, validated_section} -> {:cont, {:ok, [validated_section | acc]}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+    |> case do
+      {:ok, validated_sections} -> {:ok, Enum.reverse(validated_sections)}
+      error -> error
     end
   end
 
   defp validate_mega_menu_section(%{title: title, items: items})
        when is_binary(title) and is_list(items) do
-    invalid_item = Enum.find(items, &invalid_nav_item?/1)
-    invalid_item != nil
+    case validate_nav_items(items) do
+      {:ok, _} -> {:ok, %{title: title, items: items}}
+      {:error, reason} -> {:error, "Invalid items in mega menu section '#{title}': #{reason}"}
+    end
   end
 
-  defp validate_mega_menu_section(_), do: true
+  defp validate_mega_menu_section(%{items: items}) when is_list(items) do
+    {:error,
+     "Mega menu section missing required field 'title'. Required: title (string), items (list). Optional: description (string)"}
+  end
+
+  defp validate_mega_menu_section(%{title: title}) when is_binary(title) do
+    {:error,
+     "Mega menu section missing required field 'items'. Required: title (string), items (list). Optional: description (string)"}
+  end
+
+  defp validate_mega_menu_section(%{title: title}) do
+    {:error, "Mega menu section field 'title' must be a string, got: #{inspect(title)}"}
+  end
+
+  defp validate_mega_menu_section(%{items: items}) do
+    {:error, "Mega menu section field 'items' must be a list, got: #{inspect(items)}"}
+  end
+
+  defp validate_mega_menu_section(section) do
+    {:error,
+     "Mega menu section must have 'title' (string) and 'items' (list). Got: #{inspect(section)}"}
+  end
+
+  @doc """
+  Creates a simple navigation item.
+
+  ## Examples
+
+      iex> NavBuddy.nav_item("home", "Home", "/")
+      %{id: "home", label: "Home", navigate: "/"}
+
+      iex> NavBuddy.nav_item("admin", "Admin", "/admin", permissions: "admin")
+      %{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin"}
+  """
+  def nav_item(id, label, navigate \\ nil, opts \\ []) do
+    base = %{id: id, label: label}
+
+    base = if navigate, do: Map.put(base, :navigate, navigate), else: base
+
+    Enum.reduce(opts, base, fn {key, value}, acc ->
+      Map.put(acc, key, value)
+    end)
+  end
+
+  @doc """
+  Creates a navigation item with dropdown.
+
+  ## Examples
+
+      iex> dropdown_items = [
+      ...>   %{id: "web", label: "Web Apps", navigate: "/products/web"},
+      ...>   %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}
+      ...> ]
+      iex> NavBuddy.dropdown_item("products", "Products", dropdown_items)
+      %{id: "products", label: "Products", dropdown: [%{id: "web", label: "Web Apps", navigate: "/products/web"}, %{id: "mobile", label: "Mobile Apps", navigate: "/products/mobile"}]}
+  """
+  def dropdown_item(id, label, dropdown_items, opts \\ []) do
+    base = %{id: id, label: label, dropdown: dropdown_items}
+
+    Enum.reduce(opts, base, fn {key, value}, acc ->
+      Map.put(acc, key, value)
+    end)
+  end
+
+  @doc """
+  Creates a navigation item with simple mega menu.
+
+  ## Examples
+
+      iex> categories = %{
+      ...>   "Frontend" => [%{id: "react", label: "React", navigate: "/tools/react"}],
+      ...>   "Backend" => [%{id: "elixir", label: "Elixir", navigate: "/tools/elixir"}]
+      ...> }
+      iex> NavBuddy.mega_menu_item("tools", "Tools", categories)
+      %{id: "tools", label: "Tools", mega_menu: %{"Frontend" => [%{id: "react", label: "React", navigate: "/tools/react"}], "Backend" => [%{id: "elixir", label: "Elixir", navigate: "/tools/elixir"}]}}
+  """
+  def mega_menu_item(id, label, categories, opts \\ []) do
+    base = %{id: id, label: label, mega_menu: categories}
+
+    Enum.reduce(opts, base, fn {key, value}, acc ->
+      Map.put(acc, key, value)
+    end)
+  end
 
   @doc """
   Filters navigation items based on user permissions.

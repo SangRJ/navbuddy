@@ -1,7 +1,7 @@
 defmodule NavBuddy.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @source_url "https://github.com/SangRJ/navbuddy"
 
   def project do
@@ -40,7 +40,7 @@ defmodule NavBuddy.MixProject do
   end
 
   defp description do
-    "Advanced configurable navigation component for Phoenix LiveView applications with support for dropdowns, mega menus, and mobile-responsive design."
+    "Advanced configurable navigation component for Phoenix LiveView applications with permissions-based filtering, comprehensive validation, convenient helper functions, and support for dropdowns, mega menus, and mobile-responsive design."
   end
 
   defp package do

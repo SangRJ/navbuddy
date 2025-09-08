@@ -76,6 +76,71 @@ end
 
 ## Navigation Structure
 
+NavBuddy supports various navigation structures with comprehensive validation and helpful error messages.
+
+### Required vs Optional Fields
+
+**Required fields:**
+
+- `id` (string) - Unique identifier for the navigation item
+- `label` (string) - Display text for the navigation item
+
+**Optional fields:**
+
+- `navigate` (string) - Path to navigate to (required for clickable items)
+- `icon` (string) - Icon class or identifier
+- `dropdown` (list) - List of child navigation items
+- `mega_menu` (map) - Mega menu configuration
+- `active` (boolean) - Whether the item is currently active
+- `disabled` (boolean) - Whether the item is disabled
+- `permissions` (string | list) - Required permissions to see the item
+
+### Convenience Functions
+
+NavBuddy provides helper functions to create navigation items easily:
+
+```elixir
+# Simple navigation item
+NavBuddy.nav_item("home", "Home", "/")
+# => %{id: "home", label: "Home", navigate: "/"}
+
+# With additional options
+NavBuddy.nav_item("admin", "Admin", "/admin", permissions: "admin", icon: "admin-icon")
+# => %{id: "admin", label: "Admin", navigate: "/admin", permissions: "admin", icon: "admin-icon"}
+
+# Dropdown item
+dropdown_items = [
+  NavBuddy.nav_item("web", "Web Apps", "/products/web"),
+  NavBuddy.nav_item("mobile", "Mobile Apps", "/products/mobile")
+]
+NavBuddy.dropdown_item("products", "Products", dropdown_items)
+
+# Mega menu item
+categories = %{
+  "Frontend" => [NavBuddy.nav_item("react", "React", "/tools/react")],
+  "Backend" => [NavBuddy.nav_item("elixir", "Elixir", "/tools/elixir")]
+}
+NavBuddy.mega_menu_item("tools", "Tools", categories)
+```
+
+### Validation and Error Handling
+
+NavBuddy provides comprehensive validation with helpful error messages:
+
+```elixir
+# Invalid item - missing required fields
+NavBuddy.validate_nav_item(%{label: "Home"})
+# => {:error, "Navigation item missing required field 'id'. Required fields: id (string), label (string). Optional fields: navigate, icon, dropdown, mega_menu, active, disabled, permissions"}
+
+# Invalid field type
+NavBuddy.validate_nav_item(%{id: "home", label: "Home", active: "yes"})
+# => {:error, "Field 'active' must be a boolean, got: \"yes\""}
+
+# Conflicting navigation types
+NavBuddy.validate_nav_item(%{id: "item", label: "Item", dropdown: [], mega_menu: %{}})
+# => {:error, "Navigation item cannot have both 'dropdown' and 'mega_menu'. Choose one or the other."}
+```
+
 ### Simple Links
 
 ```elixir

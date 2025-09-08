@@ -5,6 +5,21 @@ defmodule NavBuddy.Component do
   This module provides LiveView components for rendering advanced navigation
   menus with support for dropdowns, mega menus, and mobile-responsive design.
 
+  ## Usage
+
+  Add to your LiveView module:
+
+      defmodule MyAppWeb.SomeLive do
+        use MyAppWeb, :live_view
+        use NavBuddy.Component
+
+        # Now you can use nav_menu components directly
+      end
+
+  Or import functions individually:
+
+      import NavBuddy.Component
+
   ## Components
 
   - `nav_menu/1` - Main navigation component
@@ -13,11 +28,11 @@ defmodule NavBuddy.Component do
   - `mega_menu/1` - Mega menu component
   - `mobile_nav_toggle/1` - Mobile navigation toggle button
 
-  ## Usage
+  ## Basic Example
 
       <.nav_menu
         items={@navigation_items}
-        config={@nav_config}
+        config={NavBuddy.default_config()}
         current_path={@current_path}
         id="main-nav"
       />
@@ -40,6 +55,12 @@ defmodule NavBuddy.Component do
   - Screen reader compatibility
   - Focus management
   """
+
+  defmacro __using__(_opts) do
+    quote do
+      import NavBuddy.Component
+    end
+  end
 
   use Phoenix.Component
 
