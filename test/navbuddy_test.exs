@@ -209,4 +209,111 @@ defmodule NavBuddyTest do
       assert hd(result).id == "public"
     end
   end
+
+  describe "mega menu validation" do
+    test "validates simple mega menu format" do
+      simple_mega_menu = %{
+        "Frontend" => [
+          %{id: "react", label: "React", navigate: "/tools/react"}
+        ],
+        "Backend" => [
+          %{id: "elixir", label: "Elixir", navigate: "/tools/elixir"}
+        ]
+      }
+
+      item = %{
+        id: "tools",
+        label: "Tools",
+        mega_menu: simple_mega_menu
+      }
+
+      assert {:ok, _} = NavBuddy.validate_nav_item(item)
+    end
+
+    test "validates structured mega menu format with required fields only" do
+      structured_mega_menu = %{
+        title: "Our Tools",
+        sections: [
+          %{
+            title: "Frontend",
+            items: [
+              %{id: "react", label: "React", navigate: "/tools/react"}
+            ]
+          }
+        ]
+      }
+
+      item = %{
+        id: "tools",
+        label: "Tools",
+        mega_menu: structured_mega_menu
+      }
+
+      assert {:ok, _} = NavBuddy.validate_nav_item(item)
+    end
+
+    test "validates structured mega menu format with optional description fields" do
+      structured_mega_menu = %{
+        title: "Our Tools",
+        description: "Development tools and frameworks",
+        sections: [
+          %{
+            title: "Frontend",
+            description: "Client-side tools",
+            items: [
+              %{id: "react", label: "React", navigate: "/tools/react"}
+            ]
+          }
+        ]
+      }
+
+      item = %{
+        id: "tools",
+        label: "Tools",
+        mega_menu: structured_mega_menu
+      }
+
+      assert {:ok, _} = NavBuddy.validate_nav_item(item)
+    end
+  end
+
+  describe "safe navigation item handling" do
+    test "handles minimal navigation items without KeyErrors" do
+      # Test that minimal items (only id and label) don't cause KeyErrors
+      minimal_item = %{
+        id: "minimal",
+        label: "Minimal Item"
+      }
+
+      assert {:ok, _} = NavBuddy.validate_nav_item(minimal_item)
+    end
+
+    test "handles items with some but not all optional fields" do
+      # Test that items with only some optional fields don't cause KeyErrors
+      partial_item = %{
+        id: "partial",
+        label: "Partial Item",
+        navigate: "/partial",
+        active: true
+        # Missing: icon, disabled, dropdown, mega_menu, permissions
+      }
+
+      assert {:ok, _} = NavBuddy.validate_nav_item(partial_item)
+    end
+
+    test "filters minimal items by permissions without errors" do
+      # Test that permission filtering works with minimal items
+      items = [
+        %{id: "minimal1", label: "Minimal 1"},
+        %{id: "minimal2", label: "Minimal 2", permissions: "admin"},
+        %{id: "partial", label: "Partial", navigate: "/partial", active: true}
+      ]
+
+      result = NavBuddy.filter_by_permissions(items, ["user"])
+      # Should return minimal1 and partial (no permissions required)
+      assert length(result) == 2
+      assert Enum.any?(result, &(&1.id == "minimal1"))
+      assert Enum.any?(result, &(&1.id == "partial"))
+    end
+  end
 end

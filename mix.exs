@@ -1,7 +1,7 @@
 defmodule NavBuddy.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.3"
   @source_url "https://github.com/SangRJ/navbuddy"
 
   def project do

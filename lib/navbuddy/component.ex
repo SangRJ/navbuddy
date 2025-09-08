@@ -157,7 +157,7 @@ defmodule NavBuddy.Component do
     ~H"""
     <div class={@item_classes} {@item_attributes}>
       <%= cond do %>
-        <% @item.mega_menu -> %>
+        <% Map.get(@item, :mega_menu) -> %>
           <.mega_menu_trigger item={@item} config={@config} nav_id={@nav_id} />
           <.mega_menu
             menu={@item.mega_menu}
@@ -166,7 +166,7 @@ defmodule NavBuddy.Component do
             item_id={@item.id}
           />
 
-        <% @item.dropdown -> %>
+        <% Map.get(@item, :dropdown) -> %>
           <.dropdown_trigger item={@item} config={@config} nav_id={@nav_id} />
           <.dropdown_menu
             items={@item.dropdown}
@@ -192,26 +192,26 @@ defmodule NavBuddy.Component do
 
   def nav_link(assigns) do
     ~H"""
-    <%= if @item.navigate do %>
+    <%= if Map.get(@item, :navigate) do %>
       <a
         href="#"
-        class={["navbuddy-nav-link", if(@item.active, do: "active"), if(@item.disabled, do: "disabled")]}
+        class={["navbuddy-nav-link", if(Map.get(@item, :active), do: "active"), if(Map.get(@item, :disabled), do: "disabled")]}
         role="menuitem"
-        tabindex={if @item.disabled, do: "-1", else: "0"}
-        aria-disabled={to_string(!!@item.disabled)}
-        phx-click={JS.push("navbuddy:item_click", value: %{id: @item.id, navigate: @item.navigate})}
+        tabindex={if Map.get(@item, :disabled), do: "-1", else: "0"}
+        aria-disabled={to_string(!!Map.get(@item, :disabled))}
+        phx-click={JS.push("navbuddy:item_click", value: %{id: @item.id, navigate: Map.get(@item, :navigate)})}
       >
-        <.nav_icon :if={@item.icon} icon={@item.icon} />
+        <.nav_icon :if={Map.get(@item, :icon)} icon={Map.get(@item, :icon)} />
         <span class="navbuddy-nav-text">{@item.label}</span>
       </a>
     <% else %>
       <span
-        class={["navbuddy-nav-link", "no-navigate", if(@item.disabled, do: "disabled")]}
+        class={["navbuddy-nav-link", "no-navigate", if(Map.get(@item, :disabled), do: "disabled")]}
         role="menuitem"
-        tabindex={if @item.disabled, do: "-1", else: "0"}
-        aria-disabled={to_string(!!@item.disabled)}
+        tabindex={if Map.get(@item, :disabled), do: "-1", else: "0"}
+        aria-disabled={to_string(!!Map.get(@item, :disabled))}
       >
-        <.nav_icon :if={@item.icon} icon={@item.icon} />
+        <.nav_icon :if={Map.get(@item, :icon)} icon={Map.get(@item, :icon)} />
         <span class="navbuddy-nav-text">{@item.label}</span>
       </span>
     <% end %>
@@ -328,6 +328,27 @@ defmodule NavBuddy.Component do
 
   @doc """
   Renders a mega menu.
+
+  Supports two formats:
+
+  1. Simple format: %{"Category Name" => [nav_items]}
+  2. Structured format: %{title: "Title", description: "Description", sections: [%{title: "Section", items: [nav_items]}]}
+
+  ## Examples
+
+      # Simple mega menu
+      <.mega_menu
+        menu={%{"Frontend" => [nav_items], "Backend" => [nav_items]}}
+        config={@config}
+        nav_id="main-nav"
+        item_id="tools" />
+
+      # Structured mega menu
+      <.mega_menu
+        menu={%{title: "Our Tools", sections: [%{title: "Frontend", items: [nav_items]}]}}
+        config={@config}
+        nav_id="main-nav"
+        item_id="tools" />
   """
   attr(:menu, :map, required: true)
   attr(:config, NavBuddy.Config, required: true)
@@ -346,41 +367,69 @@ defmodule NavBuddy.Component do
       aria-labelledby={"#{@nav_id}-#{@item_id}-trigger"}
     >
       <div class="navbuddy-mega-menu-container">
-        <div class="navbuddy-mega-menu-header">
-          <h3 class="navbuddy-mega-menu-title">{@menu.title}</h3>
-          <p :if={@menu.description} class="navbuddy-mega-menu-description">
-            {@menu.description}
-          </p>
-        </div>
-
-        <div class="navbuddy-mega-menu-grid">
-          <div
-            :for={section <- @menu.sections}
-            class="navbuddy-mega-menu-section"
-            role="group"
-            aria-labelledby={"#{@menu_id}-section-#{section.title |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
-          >
-            <h4
-              id={"#{@menu_id}-section-#{section.title |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
-              class="navbuddy-mega-menu-section-title"
-            >
-              {section.title}
-            </h4>
-            <p :if={section.description} class="navbuddy-mega-menu-section-description">
-              {section.description}
+        <%= if is_structured_mega_menu?(@menu) do %>
+          <div class="navbuddy-mega-menu-header">
+            <h3 class="navbuddy-mega-menu-title">{@menu.title}</h3>
+            <p :if={Map.get(@menu, :description)} class="navbuddy-mega-menu-description">
+              {Map.get(@menu, :description)}
             </p>
-
-            <ul class="navbuddy-mega-menu-section-items">
-              <li :for={item <- section.items} class="navbuddy-mega-menu-item" role="none">
-                <.nav_link item={item} config={@config} />
-              </li>
-            </ul>
           </div>
-        </div>
+
+          <div class="navbuddy-mega-menu-grid">
+            <div
+              :for={section <- @menu.sections}
+              class="navbuddy-mega-menu-section"
+              role="group"
+              aria-labelledby={"#{@menu_id}-section-#{section.title |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
+            >
+              <h4
+                id={"#{@menu_id}-section-#{section.title |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
+                class="navbuddy-mega-menu-section-title"
+              >
+                {section.title}
+              </h4>
+              <p :if={Map.get(section, :description)} class="navbuddy-mega-menu-section-description">
+                {Map.get(section, :description)}
+              </p>
+
+              <ul class="navbuddy-mega-menu-section-items">
+                <li :for={item <- section.items} class="navbuddy-mega-menu-item" role="none">
+                  <.nav_link item={item} config={@config} />
+                </li>
+              </ul>
+            </div>
+          </div>
+        <% else %>
+          <div class="navbuddy-mega-menu-grid">
+            <div
+              :for={{category_name, items} <- @menu}
+              class="navbuddy-mega-menu-section"
+              role="group"
+              aria-labelledby={"#{@menu_id}-category-#{category_name |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
+            >
+              <h4
+                id={"#{@menu_id}-category-#{category_name |> String.downcase() |> String.replace(~r/[^a-z0-9]/, "-")}"}
+                class="navbuddy-mega-menu-section-title"
+              >
+                {category_name}
+              </h4>
+
+              <ul class="navbuddy-mega-menu-section-items">
+                <li :for={item <- items} class="navbuddy-mega-menu-item" role="none">
+                  <.nav_link item={item} config={@config} />
+                </li>
+              </ul>
+            </div>
+          </div>
+        <% end %>
       </div>
     </div>
     """
   end
+
+  # Helper function to determine mega menu type
+  defp is_structured_mega_menu?(%{title: _, sections: _}), do: true
+  defp is_structured_mega_menu?(_), do: false
 
   @doc """
   Renders the mobile navigation toggle button.
@@ -588,10 +637,10 @@ defmodule NavBuddy.Component do
   defp assign_item_data(assigns) do
     item_classes = [
       "navbuddy-nav-item-wrapper",
-      if(assigns.item.active, do: "active"),
-      if(assigns.item.disabled, do: "disabled"),
-      if(assigns.item.dropdown, do: "has-dropdown"),
-      if(assigns.item.mega_menu, do: "has-mega-menu")
+      if(Map.get(assigns.item, :active), do: "active"),
+      if(Map.get(assigns.item, :disabled), do: "disabled"),
+      if(Map.get(assigns.item, :dropdown), do: "has-dropdown"),
+      if(Map.get(assigns.item, :mega_menu), do: "has-mega-menu")
     ]
 
     item_attributes = %{
